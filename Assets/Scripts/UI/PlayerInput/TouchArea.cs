@@ -4,7 +4,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine;
 
-public class TouchArea : MonoBehaviour, IPointerMoveHandler, IPointerUpHandler, IPointerDownHandler
+public class TouchArea : MonoBehaviour, IDragHandler, IPointerUpHandler, IPointerDownHandler
 {
     public float Horizontal { get; private set; }
     public bool IsMoving { get; private set; }
@@ -19,7 +19,12 @@ public class TouchArea : MonoBehaviour, IPointerMoveHandler, IPointerUpHandler, 
         IsMoving = false;
     }
 
-    public void OnPointerMove(PointerEventData eventData)
+    private float ConvertToRange(float value, Vector2 from, Vector2 to)
+    {
+        return (value - from.x) / (from.y - from.x) * (to.y - to.x) + to.x;
+    }
+
+    public void OnDrag(PointerEventData eventData)
     {
         float input = eventData.position.x;
 
@@ -27,10 +32,5 @@ public class TouchArea : MonoBehaviour, IPointerMoveHandler, IPointerUpHandler, 
         Vector2 targetRange = new Vector2(-1, 1);
 
         Horizontal = ConvertToRange(input, currentRange, targetRange);
-    }
-
-    private float ConvertToRange(float value, Vector2 from, Vector2 to)
-    {
-        return (value - from.x) / (from.y - from.x) * (to.y - to.x) + to.x;
     }
 }

@@ -6,9 +6,11 @@ using UnityEngine;
 public class PhysicsMovement : MonoBehaviour
 {
     [SerializeField] private float _moveSpeed;
+    [SerializeField] private float _minSpeed;
     [SerializeField] private SurfaceSlider _surfaceSlider;
 
     private Rigidbody _rigidbody;
+    private float _overflowSpeed;
 
     public float MoveSpeed => _moveSpeed;
 
@@ -32,8 +34,25 @@ public class PhysicsMovement : MonoBehaviour
         transform.LookAt(new Vector3(lookDirection.x, transform.position.y, lookDirection.z));
     }
 
-    public void ChangeSpeed(float value)
+    public void DecreaseSpeed(float value)
     {
-        _moveSpeed = value;
+        if (_moveSpeed - value >= _minSpeed)
+            _moveSpeed -= value;
+        else
+        {
+            _overflowSpeed += _moveSpeed - value - _minSpeed;
+            _moveSpeed = _minSpeed;
+        }
+    }
+
+    public void IncreaseSpeed(float value)
+    {
+        _overflowSpeed += value;
+        
+        if (_overflowSpeed > 0)
+        {
+            _moveSpeed += _overflowSpeed;
+            _overflowSpeed = 0;
+        }
     }
 }

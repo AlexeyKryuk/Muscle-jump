@@ -3,94 +3,105 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Enemy))]
+[RequireComponent(typeof(Rigidbody))]
 public class GrabbingState : State
 {
-    [SerializeField] private CapsuleCollider _collider;
     [SerializeField] private PhysicsMovement _movement;
-    [SerializeField] private LayerMask _layerMask;
+    [SerializeField] private float _Movespeed;
+    [SerializeField] private float _distanceToTarget;
     [SerializeField] private float _slowingAmount;
 
+    private Transform _target;
     private Rigidbody _rigidbody;
-    private Rigidbody _target;
-    private Joint _joint;
-    private Collider[] _allColliders;
+    private Collider _collider;
 
     private void Awake()
     {
         _rigidbody = GetComponent<Rigidbody>();
-        _joint = GetComponent<CharacterJoint>();
-        _allColliders = GetComponentsInChildren<Collider>();
+        _collider = GetComponent<Collider>();
     }
 
     protected override void OnEnable()
     {
         base.OnEnable();
-
-        EnableColliders();
-        _target = Target.Collider.attachedRigidbody;
-        _rigidbody.isKinematic = false;
-        _collider.enabled = true;
+        Grab();
 
         Animator.SetTrigger("Grab");
-
-        Grab();
     }
 
     protected override void OnDisable()
     {
         base.OnDisable();
-
-        _collider.enabled = false;
-        Destroy(_joint);
+        Target.Grabs.Remove(transform);
         ReturnSpeed();
+    }
+
+    private void Update()
+    {
+        MoveToTarget(_target.position, _Movespeed);
+        RotateToTarget(_target.position);
     }
 
     private void Grab()
     {
-        ConnectJoint();
+        _target = GetTarget();
+
+        MakePhysical();
         Slowdown();
     }
 
-    private void ConnectJoint()
+    private void MoveToTarget(Vector3 target, float speed)
     {
-        if (TryChangeTarget(ref _target))
-            _joint.connectedBody = _target;
-        else
-            _joint.connectedBody = Target.Collider.attachedRigidbody;
+        if (Vector3.Distance(transform.position, target) > _distanceToTarget)
+        {
+            Vector3 newPos = Vector3.MoveTowards(transform.position, target, speed * Time.deltaTime);
+            transform.position = newPos;
+        }
     }
 
-    private bool TryChangeTarget(ref Rigidbody target)
+    private void RotateToTarget(Vector3 target)
     {
-        Ray ray = new Ray(transform.position, target.transform.position);
-        RaycastHit hit;
-        float distance = (target.transform.position - transform.position).magnitude;
+        Vector3 targetDirection = (target - transform.position).normalized;
 
-        if (Physics.SphereCast(transform.position, 0.5f, target.transform.position, out hit, distance, _layerMask))
+        if (targetDirection != Vector3.zero)
         {
-            target = hit.collider.attachedRigidbody;
-            return true;
+            Quaternion lookRotation = Quaternion.LookRotation(targetDirection);
+            transform.rotation = Quaternion.Lerp(transform.rotation, lookRotation, Time.deltaTime * 5f);
         }
-        else return false;
+    }
+
+    private Transform GetTarget()
+    {
+        System.Random random = new System.Random();
+        Transform target;
+        
+        if (Target.Grabs.Count > 2)
+        {
+            int index = random.Next(Target.Grabs.Count - 3, Target.Grabs.Count - 1);
+            target = Target.Grabs[index];
+        }
+        else
+        {
+            target = Target.transform;
+        }
+
+        Target.Grabs.Add(transform);
+        return target;
     }
 
     private void Slowdown()
     {
-        if (_movement.MoveSpeed > 5)
-            _movement.ChangeSpeed(_movement.MoveSpeed - _slowingAmount);
-        else
-            _slowingAmount = 0;
+        _movement.DecreaseSpeed(_slowingAmount);
     }
 
     private void ReturnSpeed()
     {
-        _movement.ChangeSpeed(_movement.MoveSpeed + _slowingAmount);
+        _movement.IncreaseSpeed(_slowingAmount);
     }
 
-    private void EnableColliders()
+    private void MakePhysical()
     {
-        for (int i = 0; i < _allColliders.Length; i++)
-        {
-            _allColliders[i].enabled = false;
-        }
+        _collider.enabled = true;
+        _rigidbody.isKinematic = false;
     }
 }

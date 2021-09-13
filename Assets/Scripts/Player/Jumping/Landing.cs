@@ -37,11 +37,11 @@ public class Landing : MonoBehaviour
     {
         if (slowSpeed != 0)
         {
-            _movement.ChangeSpeed(_movement.MoveSpeed - slowSpeed);
+            _movement.DecreaseSpeed(slowSpeed);
 
             yield return new WaitForSeconds(time);
 
-            _movement.ChangeSpeed(_movement.MoveSpeed + slowSpeed);
+            _movement.IncreaseSpeed(slowSpeed);
         }
     }
 }

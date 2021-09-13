@@ -46,7 +46,6 @@ public class PhysicsJump : MonoBehaviour
 
     private void Jump()
     {
-        Debug.Log("Junp");
         _rigidbody.velocity = Vector3.up * _jumpForce;
 
         _currentPlatform = null;
